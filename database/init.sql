@@ -1,0 +1,10 @@
+CREATE DATABASE IF NOT EXISTS dicom_db;
+USE dicom_db;
+
+CREATE TABLE IF NOT EXISTS Dicoms (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    patientName VARCHAR(255) NOT NULL,
+    birthDate VARCHAR(255) NOT NULL,
+    seriesDescription VARCHAR(255) NOT NULL,
+    filePath VARCHAR(255) NOT NULL
+);
