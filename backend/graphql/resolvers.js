@@ -1,4 +1,3 @@
-// backend/graphql/resolvers.js
 const { Dicom } = require('../models');
 
 const resolvers = {

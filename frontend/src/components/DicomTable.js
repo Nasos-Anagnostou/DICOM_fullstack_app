@@ -1,25 +1,32 @@
 import React from 'react';
+import { Table, TableHead, TableRow, TableCell, TableBody, Button } from '@mui/material';
+import DicomViewer from './DicomViewer';
 
 const DicomTable = ({ dicoms }) => {
     return (
-        <table>
-            <thead>
-                <tr>
-                    <th>Patient Name</th>
-                    <th>Birth Date</th>
-                    <th>Series Description</th>
-                </tr>
-            </thead>
-            <tbody>
+        <Table>
+            <TableHead>
+                <TableRow>
+                    <TableCell>Patient Name</TableCell>
+                    <TableCell>Birth Date</TableCell>
+                    <TableCell>Series Description</TableCell>
+                    <TableCell>Actions</TableCell>
+                </TableRow>
+            </TableHead>
+            <TableBody>
                 {dicoms.map((dicom) => (
-                    <tr key={dicom.id}>
-                        <td>{dicom.patientName}</td>
-                        <td>{dicom.birthDate}</td>
-                        <td>{dicom.seriesDescription}</td>
-                    </tr>
+                    <TableRow key={dicom.id}>
+                        <TableCell>{dicom.patientName}</TableCell>
+                        <TableCell>{dicom.birthDate}</TableCell>
+                        <TableCell>{dicom.seriesDescription}</TableCell>
+                        <TableCell>
+                            <Button href={dicom.filePath} download variant="contained">Download</Button>
+                            <DicomViewer filePath={dicom.filePath} />
+                        </TableCell>
+                    </TableRow>
                 ))}
-            </tbody>
-        </table>
+            </TableBody>
+        </Table>
     );
 };
 
