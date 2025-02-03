@@ -1,20 +1,21 @@
 const { gql } = require('apollo-server-express');
 
 const typeDefs = gql`
-    type Dicom {
+    type DicomFile {
         id: ID!
+        filename: String!
         patientName: String
         birthDate: String
         seriesDescription: String
         filePath: String
     }
-    
+
     type Query {
-        getDicoms: [Dicom]
+        getDicomFiles: [DicomFile]
     }
 
     type Mutation {
-        addDicom(patientName: String, birthDate: String, seriesDescription: String, filePath: String): Dicom
+        uploadDicomFile(filename: String!, patientName: String, birthDate: String, seriesDescription: String, filePath: String!): DicomFile
     }
 `;
 

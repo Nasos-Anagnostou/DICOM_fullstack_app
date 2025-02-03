@@ -1,0 +1,35 @@
+{
+    "name": "dicom-frontend",
+    "version": "1.0.0",
+    "description": "Frontend for DICOM viewer app using React and MUI.",
+    "main": "index.js",
+    "scripts": {
+        "start": "react-scripts start",
+        "build": "react-scripts build",
+        "test": "react-scripts test",
+        "eject": "react-scripts eject"
+    },
+    "dependencies": {
+        "@mui/material": "^5.15.0",
+        "axios": "^1.3.4",
+        "graphql": "^16.6.0",
+        "react": "^18.2.0",
+        "react-dom": "^18.2.0",
+        "react-scripts": "^5.0.1"
+    },
+    "browserslist": {
+        "production": [
+            ">0.2%",
+            "not dead",
+            "not op_mini all"
+        ],
+        "development": [
+            "last 1 chrome version",
+            "last 1 firefox version",
+            "last 1 safari version"
+        ]
+    },
+    "engines": {
+        "node": ">=18.0.0"
+    }
+}

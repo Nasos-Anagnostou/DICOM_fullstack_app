@@ -1,9 +1,6 @@
-const { Sequelize } = require('sequelize');
-require('dotenv').config();
+const sequelize = require('../config/database');
+const DicomFile = require('./DicomFile');
 
-const sequelize = new Sequelize(process.env.DB_NAME, process.env.DB_USER, process.env.DB_PASS, {
-    host: process.env.DB_HOST,
-    dialect: 'mysql'
-});
+const db = { sequelize, DicomFile };
 
-module.exports = sequelize;
+module.exports = db;

@@ -1,32 +1,40 @@
-import React from 'react';
-import { Table, TableHead, TableRow, TableCell, TableBody, Button } from '@mui/material';
-import DicomViewer from './DicomViewer';
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 
-const DicomTable = ({ dicoms }) => {
+const DicomTable = () => {
+    const [files, setFiles] = useState([]);
+
+    useEffect(() => {
+        async function fetchFiles() {
+            const response = await axios.get("http://localhost:4000/graphql", {
+                query: `{ getDicomFiles { id filename patientName birthDate seriesDescription filePath } }`
+            });
+            setFiles(response.data.data.getDicomFiles);
+        }
+        fetchFiles();
+    }, []);
+
     return (
-        <Table>
-            <TableHead>
-                <TableRow>
-                    <TableCell>Patient Name</TableCell>
-                    <TableCell>Birth Date</TableCell>
-                    <TableCell>Series Description</TableCell>
-                    <TableCell>Actions</TableCell>
-                </TableRow>
-            </TableHead>
-            <TableBody>
-                {dicoms.map((dicom) => (
-                    <TableRow key={dicom.id}>
-                        <TableCell>{dicom.patientName}</TableCell>
-                        <TableCell>{dicom.birthDate}</TableCell>
-                        <TableCell>{dicom.seriesDescription}</TableCell>
-                        <TableCell>
-                            <Button href={dicom.filePath} download variant="contained">Download</Button>
-                            <DicomViewer filePath={dicom.filePath} />
-                        </TableCell>
-                    </TableRow>
+        <table>
+            <thead>
+                <tr>
+                    <th>Filename</th>
+                    <th>Patient Name</th>
+                    <th>Birth Date</th>
+                    <th>Series Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                {files.map(file => (
+                    <tr key={file.id}>
+                        <td>{file.filename}</td>
+                        <td>{file.patientName}</td>
+                        <td>{file.birthDate}</td>
+                        <td>{file.seriesDescription}</td>
+                    </tr>
                 ))}
-            </TableBody>
-        </Table>
+            </tbody>
+        </table>
     );
 };
 

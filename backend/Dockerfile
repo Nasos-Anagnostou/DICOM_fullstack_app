@@ -1,20 +1,21 @@
-# Use an official Node.js runtime as the base image
 FROM node:18
 
-# Set the working directory in the container
 WORKDIR /app
 
-# Copy package.json and package-lock.json to the working directory
-COPY package*.json ./
+# Install Python and venv
+RUN apt-get update && apt-get install -y python3 python3-pip python3-venv
 
-# Install dependencies
+# Create a Python virtual environment
+RUN python3 -m venv /app/venv
+
+# Activate venv and install pydicom
+RUN /app/venv/bin/pip install pydicom
+
+COPY package.json package-lock.json ./
 RUN npm install
 
-# Copy the rest of the application code
 COPY . .
 
-# Expose the port the app runs on
 EXPOSE 4000
 
-# Command to run the application
-CMD ["npm", "start"]
+CMD ["node", "server.js"]

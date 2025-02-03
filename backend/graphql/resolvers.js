@@ -1,12 +1,12 @@
-const { Dicom } = require('../models');
+const DicomFile = require('../models/DicomFile');
 
 const resolvers = {
     Query: {
-        getDicoms: async () => await Dicom.findAll()
+        getDicomFiles: async () => await DicomFile.findAll()
     },
     Mutation: {
-        addDicom: async (_, { patientName, birthDate, seriesDescription, filePath }) => {
-            return await Dicom.create({ patientName, birthDate, seriesDescription, filePath });
+        uploadDicomFile: async (_, { filename, patientName, birthDate, seriesDescription, filePath }) => {
+            return await DicomFile.create({ filename, patientName, birthDate, seriesDescription, filePath });
         }
     }
 };
