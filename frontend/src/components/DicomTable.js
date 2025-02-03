@@ -6,9 +6,20 @@ const DicomTable = () => {
 
     useEffect(() => {
         async function fetchFiles() {
-            const response = await axios.get("http://localhost:4000/graphql", {
-                query: `{ getDicomFiles { id filename patientName birthDate seriesDescription filePath } }`
-            });
+            const response = await axios.post("http://localhost:4000/graphql", {
+                query: `
+                    {
+                        getDicomFiles {
+                            id
+                            filename
+                            patientName
+                            birthDate
+                            seriesDescription
+                            filePath
+                        }
+                    }
+                `
+            });            
             setFiles(response.data.data.getDicomFiles);
         }
         fetchFiles();
