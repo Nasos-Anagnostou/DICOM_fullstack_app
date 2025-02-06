@@ -17,13 +17,15 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ✅ Ensure the uploads directory exists
 const uploadDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
 }
+
+// ✅ Serve uploaded DICOM files as static content
+app.use('/uploads', express.static(uploadDir));
 
 // ✅ Setup Multer for File Uploads
 const storage = multer.diskStorage({
@@ -37,7 +39,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// ✅ File Upload API (Uses Correct Python Execution)
+// ✅ File Upload API (Uses Python Processing)
 app.post('/upload', upload.single('file'), (req, res) => {
     if (!req.file) {
         return res.status(400).json({ error: "No file uploaded" });
@@ -61,6 +63,7 @@ app.post('/upload', upload.single('file'), (req, res) => {
                 seriesDescription: metadata.seriesDescription || "N/A",
                 filePath: `/uploads/${req.file.filename}`
             }).then(() => {
+                console.log("✅ DICOM metadata saved:", metadata);
                 res.json({
                     message: "File uploaded and processed successfully",
                     metadata
