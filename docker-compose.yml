@@ -13,6 +13,8 @@ services:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+    networks:
+      - dicom_network
 
   backend:
     build: ./backend
@@ -22,7 +24,9 @@ services:
       - mysql
     environment:
       DATABASE_URL: mysql://user:password@mysql:3306/dicomdb
-    command: ["sh", "-c", "sleep 10 && node server.js"] # <-- Add sleep to wait for MySQL
+    command: ["sh", "-c", "sleep 10 && node server.js"] # ✅ Keep this to prevent MySQL startup issues
+    networks:
+      - dicom_network
 
   frontend:
     build: ./frontend
@@ -30,6 +34,12 @@ services:
       - "3000:3000"
     depends_on:
       - backend
+    networks:
+      - dicom_network
 
 volumes:
   mysql_data:
+
+networks:
+  dicom_network:
+    driver: bridge

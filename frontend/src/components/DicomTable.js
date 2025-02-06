@@ -1,8 +1,14 @@
-import axios from 'axios';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import * as cornerstone from "cornerstone-core";
+import * as cornerstoneWADOImageLoader from "cornerstone-wado-image-loader";
+import { Dialog, DialogTitle } from "@mui/material";
 
-const DicomTable = () => {
+cornerstoneWADOImageLoader.external.cornerstone = cornerstone;
+
+const DicomTable = ({ refreshTrigger }) => {
     const [files, setFiles] = useState([]);
+    const [selectedImage, setSelectedImage] = useState(null);
 
     useEffect(() => {
         async function fetchFiles() {
@@ -19,20 +25,28 @@ const DicomTable = () => {
                                 filePath
                             }
                         }
-                    `
+                    `,
                 });
 
                 if (response.data.data && response.data.data.getDicomFiles) {
                     setFiles(response.data.data.getDicomFiles);
                 } else {
-                    setFiles([]); // Ensure it's an empty array if nothing is returned
+                    setFiles([]);
                 }
             } catch (error) {
                 console.error("Error fetching DICOM files:", error);
             }
         }
         fetchFiles();
-    }, []);
+    }, [refreshTrigger]);
+
+    const loadDicomImage = (imageId) => {
+        const element = document.getElementById("dicomImageViewer");
+        cornerstone.loadImage(imageId).then((image) => {
+            const viewport = cornerstone.getDefaultViewportForImage(element, image);
+            cornerstone.displayImage(element, image, viewport);
+        });
+    };
 
     return (
         <div>
@@ -47,20 +61,43 @@ const DicomTable = () => {
                             <th>Patient Name</th>
                             <th>Birth Date</th>
                             <th>Series Description</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {files.map(file => (
+                        {files.map((file) => (
                             <tr key={file.id}>
                                 <td>{file.filename}</td>
-                                <td>{file.patientName}</td>
-                                <td>{file.birthDate}</td>
-                                <td>{file.seriesDescription}</td>
+                                <td>{file.patientName || "N/A"}</td>
+                                <td>{file.birthDate || "N/A"}</td>
+                                <td>{file.seriesDescription || "N/A"}</td>
+                                <td>
+                                    {/* Download Button */}
+                                    <a href={`http://localhost:4000${file.filePath}`} download>
+                                        <button>Download</button>
+                                    </a>
+
+                                    {/* View Image Button */}
+                                    <button
+                                        onClick={() => {
+                                            setSelectedImage(file.filePath);
+                                            loadDicomImage(`wadouri:http://localhost:4000${file.filePath}`);
+                                        }}
+                                    >
+                                        View Image
+                                    </button>
+                                </td>
                             </tr>
                         ))}
                     </tbody>
                 </table>
             )}
+
+            {/* DICOM Image Viewer Modal */}
+            <Dialog open={Boolean(selectedImage)} onClose={() => setSelectedImage(null)}>
+                <DialogTitle>DICOM Image Preview</DialogTitle>
+                <div id="dicomImageViewer" style={{ width: "512px", height: "512px", backgroundColor: "black" }}></div>
+            </Dialog>
         </div>
     );
 };

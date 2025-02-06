@@ -18,4 +18,5 @@ COPY . .
 
 EXPOSE 4000
 
-CMD ["node", "server.js"]
+# ✅ Ensure the virtual environment is always used
+CMD ["/app/venv/bin/python3", "-m", "http.server", "4000"]

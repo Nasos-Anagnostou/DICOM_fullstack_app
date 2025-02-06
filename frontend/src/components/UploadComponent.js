@@ -1,34 +1,28 @@
 import React, { useState } from "react";
 import axios from "axios";
 
-const UploadComponent = () => {
+const UploadComponent = ({ onUploadSuccess }) => {
     const [file, setFile] = useState(null);
     const [dragging, setDragging] = useState(false);
 
-    // 🔹 Prevent default behavior when dragging over
     const handleDragOver = (event) => {
         event.preventDefault();
-        event.stopPropagation();
         setDragging(true);
     };
 
-    // 🔹 Prevent default drop behavior and capture the file
     const handleDrop = (event) => {
         event.preventDefault();
-        event.stopPropagation();
         setDragging(false);
 
         if (event.dataTransfer.files.length > 0) {
-            setFile(event.dataTransfer.files[0]); // Set the dropped file
+            setFile(event.dataTransfer.files[0]);
         }
     };
 
-    // 🔹 Handle file selection via "Choose File" button
     const handleFileChange = (event) => {
         setFile(event.target.files[0]);
     };
 
-    // 🔹 Upload File to Backend
     const handleUpload = async () => {
         if (!file) {
             alert("Please select or drop a file first.");
@@ -40,13 +34,14 @@ const UploadComponent = () => {
 
         try {
             const response = await axios.post("http://localhost:4000/upload", formData, {
-                headers: {
-                    "Content-Type": "multipart/form-data",
-                },
+                headers: { "Content-Type": "multipart/form-data" }
             });
 
             alert("File uploaded successfully!");
             console.log(response.data);
+
+            // ✅ Notify parent to refresh the table
+            onUploadSuccess();
         } catch (error) {
             console.error("Upload error:", error);
             alert("File upload failed.");
@@ -67,16 +62,9 @@ const UploadComponent = () => {
                 cursor: "pointer"
             }}
             onDragOver={handleDragOver}
-            onDragEnter={handleDragOver}
-            onDragLeave={() => setDragging(false)}
             onDrop={handleDrop}
         >
-            <input
-                type="file"
-                onChange={handleFileChange}
-                style={{ display: "none" }}
-                id="fileInput"
-            />
+            <input type="file" onChange={handleFileChange} style={{ display: "none" }} id="fileInput" />
             <label htmlFor="fileInput" style={{ cursor: "pointer" }}>
                 {file ? file.name : "Drag & Drop a DICOM file here or Click to Select"}
             </label>
