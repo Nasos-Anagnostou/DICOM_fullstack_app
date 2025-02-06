@@ -1,14 +1,18 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import * as cornerstone from "cornerstone-core";
 import * as cornerstoneWADOImageLoader from "cornerstone-wado-image-loader";
+import * as dicomParser from "dicom-parser"; // ✅ Import dicomParser
 import { Dialog, DialogTitle } from "@mui/material";
 
+// ✅ Assign dicomParser to cornerstoneWADOImageLoader
 cornerstoneWADOImageLoader.external.cornerstone = cornerstone;
+cornerstoneWADOImageLoader.external.dicomParser = dicomParser;
 
 const DicomTable = ({ refreshTrigger }) => {
     const [files, setFiles] = useState([]);
     const [selectedImage, setSelectedImage] = useState(null);
+    const dicomViewerRef = useRef(null); // ✅ Reference to the viewer element
 
     useEffect(() => {
         async function fetchFiles() {
@@ -41,10 +45,24 @@ const DicomTable = ({ refreshTrigger }) => {
     }, [refreshTrigger]);
 
     const loadDicomImage = (imageId) => {
-        const element = document.getElementById("dicomImageViewer");
+        const element = dicomViewerRef.current; // ✅ Get the viewer element
+
+        if (!element) {
+            console.error("❌ DICOM Viewer element not found!");
+            return;
+        }
+
+        // ✅ Enable the element for Cornerstone
+        if (!cornerstone.getEnabledElement(element)) {
+            cornerstone.enable(element);
+        }
+
+        // ✅ Load and display the image
         cornerstone.loadImage(imageId).then((image) => {
             const viewport = cornerstone.getDefaultViewportForImage(element, image);
             cornerstone.displayImage(element, image, viewport);
+        }).catch((error) => {
+            console.error("❌ Error loading DICOM image:", error);
         });
     };
 
@@ -96,7 +114,11 @@ const DicomTable = ({ refreshTrigger }) => {
             {/* DICOM Image Viewer Modal */}
             <Dialog open={Boolean(selectedImage)} onClose={() => setSelectedImage(null)}>
                 <DialogTitle>DICOM Image Preview</DialogTitle>
-                <div id="dicomImageViewer" style={{ width: "512px", height: "512px", backgroundColor: "black" }}></div>
+                <div 
+                    id="dicomImageViewer" 
+                    ref={dicomViewerRef} // ✅ Assign the reference
+                    style={{ width: "512px", height: "512px", backgroundColor: "black" }}
+                ></div>
             </Dialog>
         </div>
     );
