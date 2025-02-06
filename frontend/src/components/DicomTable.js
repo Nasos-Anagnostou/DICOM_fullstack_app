@@ -2,12 +2,14 @@ import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import * as cornerstone from "cornerstone-core";
 import * as cornerstoneWADOImageLoader from "cornerstone-wado-image-loader";
-import * as dicomParser from "dicom-parser"; // ✅ Import dicomParser
+import * as dicomParser from "dicom-parser";
+import * as cornerstoneTools from "cornerstone-tools"; // ✅ Import cornerstone tools
 import { Dialog, DialogTitle } from "@mui/material";
 
-// ✅ Assign dicomParser to cornerstoneWADOImageLoader
+// ✅ Assign external libraries to cornerstone
 cornerstoneWADOImageLoader.external.cornerstone = cornerstone;
 cornerstoneWADOImageLoader.external.dicomParser = dicomParser;
+cornerstoneTools.init(); // ✅ Initialize cornerstone tools
 
 const DicomTable = ({ refreshTrigger }) => {
     const [files, setFiles] = useState([]);
@@ -44,27 +46,46 @@ const DicomTable = ({ refreshTrigger }) => {
         fetchFiles();
     }, [refreshTrigger]);
 
-    const loadDicomImage = (imageId) => {
-        const element = dicomViewerRef.current; // ✅ Get the viewer element
+    useEffect(() => {
+        if (!selectedImage) return;
 
-        if (!element) {
-            console.error("❌ DICOM Viewer element not found!");
-            return;
-        }
+        // ✅ Ensure that the viewer exists before loading the image
+        setTimeout(() => {
+            const element = dicomViewerRef.current;
 
-        // ✅ Enable the element for Cornerstone
-        if (!cornerstone.getEnabledElement(element)) {
+            if (!element) {
+                console.error("❌ DICOM Viewer element not found!");
+                return;
+            }
+
+            console.log("📡 Loading image into viewer:", selectedImage);
             cornerstone.enable(element);
-        }
 
-        // ✅ Load and display the image
-        cornerstone.loadImage(imageId).then((image) => {
-            const viewport = cornerstone.getDefaultViewportForImage(element, image);
-            cornerstone.displayImage(element, image, viewport);
-        }).catch((error) => {
-            console.error("❌ Error loading DICOM image:", error);
-        });
-    };
+            // ✅ Build imageId for Cornerstone
+            const imageId = `wadouri:http://localhost:4000${selectedImage}`;
+            console.log("📡 Fetching Image:", imageId); // 🔹 Debugging log
+
+            // ✅ Load and display the DICOM image
+            cornerstone.loadImage(imageId).then((image) => {
+                console.log("✅ Image Loaded:", image);
+
+                const viewport = cornerstone.getDefaultViewportForImage(element, image);
+
+                // 🔹 Apply auto windowing based on image pixel intensity
+                viewport.voi.windowWidth = image.maxPixelValue - image.minPixelValue;
+                viewport.voi.windowCenter = (image.maxPixelValue + image.minPixelValue) / 2;
+
+                cornerstone.displayImage(element, image, viewport);
+
+                // ✅ Enable Windowing Adjustments
+                cornerstoneTools.addTool(cornerstoneTools.WwwcTool);
+                cornerstoneTools.setToolActive("Wwwc", { mouseButtonMask: 1 });
+
+            }).catch((error) => {
+                console.error("❌ Error loading DICOM image:", error);
+            });
+        }, 500); // 🔹 Add small delay to ensure the modal is fully open
+    }, [selectedImage]); // 🔹 Runs whenever `selectedImage` changes
 
     return (
         <div>
@@ -97,10 +118,7 @@ const DicomTable = ({ refreshTrigger }) => {
 
                                     {/* View Image Button */}
                                     <button
-                                        onClick={() => {
-                                            setSelectedImage(file.filePath);
-                                            loadDicomImage(`wadouri:http://localhost:4000${file.filePath}`);
-                                        }}
+                                        onClick={() => setSelectedImage(file.filePath)}
                                     >
                                         View Image
                                     </button>
