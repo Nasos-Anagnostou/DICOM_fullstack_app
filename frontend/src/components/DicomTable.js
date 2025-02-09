@@ -3,13 +3,31 @@ import axios from "axios";
 import * as cornerstone from "cornerstone-core";
 import * as cornerstoneWADOImageLoader from "cornerstone-wado-image-loader";
 import * as dicomParser from "dicom-parser";
-import { Dialog, DialogTitle, Button } from "@mui/material";
+import {
+    Dialog,
+    DialogTitle,
+    Button,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Paper,
+    Box,
+    Typography,
+    IconButton
+} from "@mui/material";
+import DeleteIcon from "@mui/icons-material/Delete";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import DownloadIcon from "@mui/icons-material/Download";
+import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 
 // ✅ Ensure cornerstone is properly set up
 cornerstoneWADOImageLoader.external.cornerstone = cornerstone;
 cornerstoneWADOImageLoader.external.dicomParser = dicomParser;
 
-// ✅ Configure DICOM image loader
+// ✅ Configure the DICOM image loader
 cornerstoneWADOImageLoader.configure({
     beforeSend: (xhr) => {
         xhr.setRequestHeader("Accept", "application/dicom");
@@ -19,6 +37,7 @@ cornerstoneWADOImageLoader.configure({
 const DicomTable = ({ refreshTrigger }) => {
     const [files, setFiles] = useState([]);
     const [selectedImage, setSelectedImage] = useState(null);
+    const [confirmClear, setConfirmClear] = useState(false);
     const dicomViewerRef = useRef(null); // ✅ Reference to the viewer element
 
     useEffect(() => {
@@ -72,6 +91,8 @@ const DicomTable = ({ refreshTrigger }) => {
         } catch (error) {
             console.error("❌ Error clearing files:", error);
             alert("Failed to clear DICOM files.");
+        } finally {
+            setConfirmClear(false); // Close confirmation dialog
         }
     };
 
@@ -119,65 +140,89 @@ const DicomTable = ({ refreshTrigger }) => {
     }, [selectedImage]);
 
     return (
-        <div>
-            <h2>DICOM Files</h2>
-            {/* Clear Table Button */}
+        <Box sx={{ maxWidth: 900, mx: "auto", my: 4 }}>
+            <Typography variant="h4" gutterBottom align="center">
+                DICOM Files
+            </Typography>
+
+            {/* 🗑 Clear Table Button with Confirmation */}
             <Button 
                 variant="contained" 
-                color="secondary" 
-                onClick={clearTable} 
-                style={{ marginBottom: "10px" }}>
+                color="error" 
+                onClick={() => setConfirmClear(true)} 
+                sx={{ display: "block", mx: "auto", my: 2 }}>
                 🗑 Clear Table
             </Button>
 
+            <Dialog open={confirmClear} onClose={() => setConfirmClear(false)}>
+                <DialogTitle>
+                    <WarningAmberIcon color="warning" sx={{ mr: 1 }} />
+                    Confirm Clear Table
+                </DialogTitle>
+                <Box p={2} textAlign="center">
+                    <Typography>Are you sure you want to delete all files?</Typography>
+                    <Button 
+                        variant="contained" 
+                        color="error" 
+                        onClick={clearTable} 
+                        sx={{ mt: 2 }}>
+                        Yes, Delete All
+                    </Button>
+                </Box>
+            </Dialog>
+
             {files.length === 0 ? (
-                <p>No DICOM files found. Please upload a file.</p>
+                <Typography variant="h6" align="center" color="textSecondary">
+                    No DICOM files found. Please upload a file.
+                </Typography>
             ) : (
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Filename</th>
-                            <th>Patient Name</th>
-                            <th>Birth Date</th>
-                            <th>Series Description</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {files.map((file) => (
-                            <tr key={file.id}>
-                                <td>{file.filename}</td>
-                                <td>{file.patientName || "N/A"}</td>
-                                <td>{file.birthDate || "N/A"}</td>
-                                <td>{file.seriesDescription || "N/A"}</td>
-                                <td>
-                                    <a href={`http://localhost:4000${file.filePath}`} download>
-                                        <button>Download</button>
-                                    </a>
-                                    <button onClick={() => setSelectedImage(file.filePath)}>
-                                        View Image
-                                    </button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+                <TableContainer component={Paper}>
+                    <Table>
+                        <TableHead>
+                            <TableRow sx={{ backgroundColor: "#f5f5f5" }}>
+                                <TableCell><b>Filename</b></TableCell>
+                                <TableCell><b>Patient Name</b></TableCell>
+                                <TableCell><b>Birth Date</b></TableCell>
+                                <TableCell><b>Series Description</b></TableCell>
+                                <TableCell><b>Actions</b></TableCell>
+                            </TableRow>
+                        </TableHead>
+                        <TableBody>
+                            {files.map((file) => (
+                                <TableRow key={file.id} hover>
+                                    <TableCell>{file.filename}</TableCell>
+                                    <TableCell>{file.patientName || "N/A"}</TableCell>
+                                    <TableCell>{file.birthDate || "N/A"}</TableCell>
+                                    <TableCell>{file.seriesDescription || "N/A"}</TableCell>
+                                    <TableCell>
+                                        <IconButton href={`http://localhost:4000${file.filePath}`} download>
+                                            <DownloadIcon color="primary" />
+                                        </IconButton>
+                                        <IconButton onClick={() => setSelectedImage(file.filePath)}>
+                                            <VisibilityIcon color="action" />
+                                        </IconButton>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </TableContainer>
             )}
 
-            {/* DICOM Image Viewer */}
+            {/* 🖼️ DICOM Image Viewer */}
             <Dialog open={Boolean(selectedImage)} onClose={() => setSelectedImage(null)}>
                 <DialogTitle>DICOM Image Preview</DialogTitle>
-                <div 
+                <Box 
                     id="dicomImageViewer" 
-                    ref={dicomViewerRef} // ✅ Assign the reference
-                    style={{ width: "512px", height: "512px", backgroundColor: "black" }}
+                    ref={dicomViewerRef} 
+                    sx={{ width: 512, height: 512, backgroundColor: "black", mx: "auto", p: 2 }}
                 >
-                    <p style={{ color: "white", textAlign: "center" }}>
+                    <Typography align="center" color="white">
                         {selectedImage ? "Loading DICOM..." : "No Image Loaded"}
-                    </p>
-                </div>
+                    </Typography>
+                </Box>
             </Dialog>
-        </div>
+        </Box>
     );
 };
 
