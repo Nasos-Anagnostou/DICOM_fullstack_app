@@ -13,69 +13,69 @@ const DicomFile = require('./models/DicomFile');
 
 const app = express();
 
-// ✅ Enable CORS for all requests
+require('dotenv').config();
+
+// ✅ Enable CORS & JSON Parsing
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// ✅ Ensure the uploads directory exists
+// ✅ Ensure uploads directory exists
 const uploadDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
 }
-
-// ✅ Serve uploaded DICOM files as static content
 app.use('/uploads', express.static(uploadDir));
 
-// ✅ Setup Multer for File Uploads
+// ✅ Configure Multer for File Uploads
 const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, uploadDir);
-    },
-    filename: (req, file, cb) => {
-        cb(null, Date.now() + path.extname(file.originalname)); // Unique filenames
-    }
+    destination: (req, file, cb) => cb(null, uploadDir),
+    filename: (req, file, cb) => cb(null, Date.now() + path.extname(file.originalname))
 });
-
 const upload = multer({ storage });
 
-// ✅ File Upload API (Uses Python Processing)
+// ✅ File Upload API
 app.post('/upload', upload.single('file'), (req, res) => {
     if (!req.file) {
         return res.status(400).json({ error: "No file uploaded" });
     }
 
-    const filePath = path.join(uploadDir, req.file.filename);
+    const filePath = `/uploads/${req.file.filename}`;
+    
+    console.log("🟢 File uploaded:", filePath);
 
-    exec(`/app/venv/bin/python3 scripts/process_dicom.py "${filePath}"`, (error, stdout) => {
+    // 🔹 Execute Python inside the correct virtual environment
+    const pythonCommand = "/app/venv/bin/python3"; 
+
+    exec(`${pythonCommand} scripts/process_dicom.py "${filePath}"`, (error, stdout) => {
         if (error) {
-            console.error("❌ Error processing DICOM file:", error);
-            return res.status(500).json({ error: "Failed to process DICOM file" });
+            console.error("❌ Error processing DICOM:", error);
+            return res.status(500).json({ error: "Failed to process DICOM" });
         }
 
         try {
             const metadata = JSON.parse(stdout);
+
+            // ✅ If using JPEG conversion, update filePath to JPEG
+            if (metadata.jpegPath) {
+                metadata.filePath = metadata.jpegPath.replace(uploadDir, "/uploads");
+            }
 
             DicomFile.create({
                 filename: req.file.filename,
                 patientName: metadata.patientName || "Unknown",
                 birthDate: metadata.birthDate || "N/A",
                 seriesDescription: metadata.seriesDescription || "N/A",
-                filePath: `/uploads/${req.file.filename}`
-            }).then(() => {
-                console.log("✅ DICOM metadata saved:", metadata);
-                res.json({
-                    message: "File uploaded and processed successfully",
-                    metadata
-                });
-            }).catch(err => {
+                filePath: metadata.filePath || filePath  // ✅ Store JPEG if available, else DICOM
+            }).then(() => res.json({ message: "File uploaded & processed successfully", metadata }))
+            .catch(err => {
                 console.error("❌ Database Error:", err);
-                res.status(500).json({ error: "Failed to save metadata to database" });
+                res.status(500).json({ error: "Failed to save metadata" });
             });
 
         } catch (parseError) {
             console.error("❌ JSON Parse Error:", parseError);
-            res.status(500).json({ error: "Failed to parse DICOM metadata" });
+            res.status(500).json({ error: "Failed to parse metadata" });
         }
     });
 });

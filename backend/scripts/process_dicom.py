@@ -1,20 +1,20 @@
 import pydicom
-import sys
 import json
+import sys
 
-def process_dicom(file_path):
-    try:
-        ds = pydicom.dcmread(file_path)
+file_path = sys.argv[1]
 
-        metadata = {
-            "patientName": str(ds.PatientName) if "PatientName" in ds else "Unknown",
-            "birthDate": str(ds.PatientBirthDate) if "PatientBirthDate" in ds else "N/A",
-            "seriesDescription": str(ds.SeriesDescription) if "SeriesDescription" in ds else "N/A"
-        }
+try:
+    # ✅ Force read DICOM
+    dicom_data = pydicom.dcmread(file_path, force=True)
 
-        print(json.dumps(metadata))  # ✅ Outputs JSON metadata
-    except Exception as e:
-        print(json.dumps({"error": str(e)}))
+    metadata = {
+        "patientName": dicom_data.PatientName if "PatientName" in dicom_data else "Unknown",
+        "birthDate": dicom_data.PatientBirthDate if "PatientBirthDate" in dicom_data else "N/A",
+        "seriesDescription": dicom_data.SeriesDescription if "SeriesDescription" in dicom_data else "N/A"
+    }
 
-if __name__ == "__main__":
-    process_dicom(sys.argv[1])
+    print(json.dumps(metadata))
+
+except Exception as e:
+    print(json.dumps({"error": str(e)}))

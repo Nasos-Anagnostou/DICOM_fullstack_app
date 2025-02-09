@@ -4,7 +4,7 @@ const resolvers = {
     Query: {
         getDicomFiles: async () => {
             const files = await DicomFile.findAll();
-            console.log("📡 Fetching DICOM Files from Database:", files);
+            //console.log("📡 Fetching DICOM Files from Database:", files);
             return files;
         }
     },

@@ -40,7 +40,7 @@ const UploadComponent = ({ onUploadSuccess }) => {
             alert("File uploaded successfully!");
             console.log(response.data);
 
-            // ✅ Notify parent to refresh the table
+            //     Notify parent to refresh the table
             onUploadSuccess();
         } catch (error) {
             console.error("Upload error:", error);

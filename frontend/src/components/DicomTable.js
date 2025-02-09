@@ -2,12 +2,19 @@ import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import * as cornerstone from "cornerstone-core";
 import * as cornerstoneWADOImageLoader from "cornerstone-wado-image-loader";
-import * as dicomParser from "dicom-parser"; // ✅ Import dicomParser
+import * as dicomParser from "dicom-parser";
 import { Dialog, DialogTitle } from "@mui/material";
 
-// ✅ Assign dicomParser to cornerstoneWADOImageLoader
+// ✅ Ensure cornerstone is properly set up
 cornerstoneWADOImageLoader.external.cornerstone = cornerstone;
 cornerstoneWADOImageLoader.external.dicomParser = dicomParser;
+
+// ✅ Configure the image loader
+cornerstoneWADOImageLoader.configure({
+    beforeSend: (xhr) => {
+        xhr.setRequestHeader("Accept", "application/dicom");
+    }
+});
 
 const DicomTable = ({ refreshTrigger }) => {
     const [files, setFiles] = useState([]);
@@ -44,38 +51,46 @@ const DicomTable = ({ refreshTrigger }) => {
         fetchFiles();
     }, [refreshTrigger]);
 
-    const loadDicomImage = (imageId) => {
-        const element = dicomViewerRef.current; // ✅ Get the viewer element
+    const loadDicomImage = () => {
+        if (!selectedImage) return;
 
-        if (!element) {
-            console.error("❌ DICOM Viewer element not found!");
-            return;
-        }
+        setTimeout(() => {
+            const element = dicomViewerRef.current;
 
-        // ✅ Enable the element for Cornerstone
-        if (!cornerstone.getEnabledElement(element)) {
+            if (!element) {
+                console.error("❌ DICOM Viewer element not found!");
+                return;
+            }
+
+            console.log("✅ DICOM Viewer element found:", element);
+
+            // ✅ Ensure the element is enabled before loading the image
+            cornerstone.disable(element);
             cornerstone.enable(element);
-        }
+            console.log("✅ Cornerstone re-enabled on element.");
 
-        const dicomUrl = `wadouri:http://localhost:4000${imageId}`;
-        console.log("🟢 Fetching DICOM from:", dicomUrl);
+            const dicomUrl = `wadouri:http://localhost:4000${selectedImage}`;
+            console.log("🟢 Fetching DICOM from:", dicomUrl);
 
-        // ✅ Load and display the image
-        cornerstone.loadImage(dicomUrl)
-            .then((image) => {
-                console.log("✅ DICOM Image Loaded:", image);
-                const viewport = cornerstone.getDefaultViewportForImage(element, image);
-                
-                // 🔹 Apply default window leveling (Adjust brightness/contrast)
-                viewport.voi.windowWidth = image.windowWidth || 400;   // Contrast adjustment
-                viewport.voi.windowCenter = image.windowCenter || 40;   // Brightness adjustment
-                
-                cornerstone.displayImage(element, image, viewport);
-            })
-            .catch((error) => {
-                console.error("❌ Error loading DICOM image:", error);
-            });
+            cornerstone.loadImage(dicomUrl)
+                .then((image) => {
+                    console.log("✅ DICOM Image Loaded Successfully:", image);
+                    const viewport = cornerstone.getDefaultViewportForImage(element, image);
+                    cornerstone.displayImage(element, image, viewport);
+                })
+                .catch((error) => {
+                    console.error("❌ Error loading DICOM image:", error);
+                    console.error("🔴 Possible Causes: Invalid file path or unsupported DICOM format.");
+                });
+        }, 500);
     };
+
+    useEffect(() => {
+        if (selectedImage) {
+            console.log("🟢 Attempting to load image:", selectedImage);
+            loadDicomImage();
+        }
+    }, [selectedImage]);
 
     return (
         <div>
@@ -101,20 +116,10 @@ const DicomTable = ({ refreshTrigger }) => {
                                 <td>{file.birthDate || "N/A"}</td>
                                 <td>{file.seriesDescription || "N/A"}</td>
                                 <td>
-                                    {/* Download Button */}
                                     <a href={`http://localhost:4000${file.filePath}`} download>
                                         <button>Download</button>
                                     </a>
-
-                                    {/* View Image Button */}
-                                    <button
-                                        onClick={() => {
-                                            const dicomPath = `wadouri:http://localhost:4000${file.filePath}`;
-                                            console.log("🟢 Fetching DICOM from:", dicomPath);
-                                            setSelectedImage(file.filePath);
-                                            loadDicomImage(dicomPath);
-                                        }}
-                                    >
+                                    <button onClick={() => setSelectedImage(file.filePath)}>
                                         View Image
                                     </button>
                                 </td>
@@ -124,7 +129,7 @@ const DicomTable = ({ refreshTrigger }) => {
                 </table>
             )}
 
-            {/* DICOM Image Viewer Modal */}
+            {/* DICOM Image Viewer */}
             <Dialog open={Boolean(selectedImage)} onClose={() => setSelectedImage(null)}>
                 <DialogTitle>DICOM Image Preview</DialogTitle>
                 <div 
